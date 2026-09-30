@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiblioSenai - Sistema de Biblioteca Escolar</title>
+    <style>
+        /* Variáveis de Tema - Claro e Escuro */
+        :root {
+            --bg-color: #f4f7f6;
+            --text-color: #333333;
+            --header-bg: #004080;
+            --header-text: #ffffff;
+            --card-bg: #ffffff;
+            --border-color: #dddddd;
+            --primary-btn: #0059b3;
+            --primary-btn-hover: #004080;
+            --danger-btn: #cc0000;
+            --danger-btn-hover: #990000;
+            --input-bg: #ffffff;
+            --input-border: #cccccc;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --text-color: #e0e0e0;
+                --header-bg: #1f1f1f;
+                --header-text: #66b3ff;
+                --card-bg: #1e1e1e;
+                --border-color: #333333;
+                --primary-btn: #3385ff;
+                --primary-btn-hover: #1a75ff;
+                --danger-btn: #ff4d4d;
+                --danger-btn-hover: #ff3333;
+                --input-bg: #2d2d2d;
+                --input-border: #444444;
+            }
+        }
+
+        /* Estilos Globais */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding-top: 60px; }
+        a { color: var(--primary-btn); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Header e Navegação */
+        header { background-color: var(--header-bg); color: var(--header-text); position: fixed; top: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        header h1 { font-size: 1.5rem; cursor: pointer; }
+        nav { display: flex; gap: 15px; }
+        nav a { color: var(--header-text); font-weight: bold; }
+        nav a:hover { color: #ccc; }
+
+        /* Banner */
+        .banner { background: linear-gradient(135deg, var(--header-bg), var(--primary-btn)); color: white; padding: 40px 20px; text-align: center; border-bottom: 3px solid var(--border-color); }
+        .banner h2 { font-size: 2rem; margin-bottom: 10px; }
+
+        /* Container Principal */
+        main { padding: 20px; max-width: 1200px; margin: 0 auto; min-height: 80vh; }
+        
+        /* Cards e Layout */
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        
+        /* Formulários e Botões */
+        form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: 0 auto; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--input-border); border-radius: 4px; background-color: var(--input-bg); color: var(--text-color); }
+        button { padding: 10px 15px; border: none; border-radius: 4px; background-color: var(--primary-btn); color: white; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        button:hover { background-color: var(--primary-btn-hover); }
+        .btn-danger { background-color: var(--danger-btn); }
+        .btn-danger:hover { background-color: var(--danger-btn-hover); }
+
+        /* Rodapé */
+        footer { text-align: center; padding: 20px; border-top: 1px solid var(--border-color); margin-top: 40px; font-size: 0.9rem; }
+        
+        /* Toast Notifications */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+        .toast { background-color: #333; color: #fff; padding: 15px 20px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); opacity: 0; transform: translateY(20px); animation: fadeInOut 3s forwards; }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        /* Tabelas */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; }
+        th { background-color: var(--border-color); }
+    </style>
+</head>
+<body>
+
+    <!-- 
+        COMENTÁRIO ESQUECIDO (VULNERABILIDADE: EXPOSIÇÃO DE INFORMAÇÕES)
+        TODO: A rota #/debug deve ser desativada no ambiente de produção!
+        Credenciais do Admin para testes de homologação: admin@senai.br / admin
+    -->
+
+    <header>
+        <h1 onclick="window.location.hash='#/'">📚 BiblioSenai</h1>
+        <nav id="nav-menu">
+            <!-- Menu renderizado via JS -->
+        </nav>
+    </header>
+
+    <main id="app">
+        <!-- Conteúdo renderizado via JS -->
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Sistema de Biblioteca Escolar - BiblioSenai.</p>
+        <p><a href="#" onclick="resetDB(); return false;">⚠️ Resetar Banco de Dados (Carregar novos livros)</a></p>
+    </footer>
+
+    <div id="toast-container"></div>
+
+    <script>
+        /**
+         * OBJETO DE CONTROLE DE VULNERABILIDADES (Fins Didáticos / CTF)
+         * Altere para 'false' para ver a versão corrigida de cada falha.
+         */
+        const VULN = {
+            reflectedXSS: true,    // Falha na busca do acervo
+            storedXSS: true,       // Falha na bio e avaliações dos livros
+            idorProfile: true,     // Insecure Direct Object Reference ao ver perfil de outros
+            brokenAccess: true,    // Confia no 'role' salvo no localStorage para acesso admin
+            infoExposure: true     // Rota /debug exposta e comentários no HTML (HTML visto acima)
+        };
+
+        // --- SISTEMA DE BANCO DE DADOS SIMULADO (LOCALSTORAGE) ---
+
+        const defaultDB = {
+            users: [
+                { id: 1, name: 'Administrador Chefe', email: 'admin@senai.br', password: 'admin', cpf: '111.111.111-11', role: 'admin', bio: 'Administrador do sistema.' },
+                { id: 2, name: 'João Silva', email: 'aluno1@senai.br', password: 'aluno', cpf: '222.222.222-22', role: 'user', bio: 'Adoro romances de época e dramas adolescentes. FLAG{IDOR_PERFIL}' },
+                { id: 3, name: 'Maria Souza', email: 'aluno2@senai.br', password: 'aluno', cpf: '333.333.333-33', role: 'user', bio: 'Leitora assídua.' }
+            ],
+            books: [
+                // Livros Originais de TI (Mantidos para contexto de laboratório)
+                { id: 1, title: 'Segurança em Aplicações Web', author: 'Carlos Silva', category: 'Tecnologia', description: 'Fundamentos de XSS, SQLi e outras falhas.' },
+                { id: 2, title: 'Redes de Computadores', author: 'Andrew S. Tanenbaum', category: 'Tecnologia', description: 'O clássico sobre redes.' },
+                
+                // Série Boys of Tommen (Chloe Walsh)
+                { id: 3, title: 'Binding 13', author: 'Chloe Walsh', category: 'Romance / Jovem Adulto', description: 'Livro 1 da série Boys of Tommen. A história de Johnny e Shannon.' },
+                { id: 4, title: 'Keeping 13', author: 'Chloe Walsh', category: 'Romance / Jovem Adulto', description: 'Livro 2 da série Boys of Tommen. A continuação da jornada de Johnny e Shannon.' },
+                { id: 5, title: 'Saving 6', author: 'Chloe Walsh', category: 'Romance / Jovem Adulto', description: 'Livro 3 da série Boys of Tommen. Focado em Joey e Aoife.' },
+                { id: 6, title: 'Redeeming 6', author: 'Chloe Walsh', category: 'Romance / Jovem Adulto', description: 'Livro 4 da série Boys of Tommen. Desfecho da história de Joey e Aoife.' },
+                { id: 7, title: 'Taming 7', author: 'Chloe Walsh', category: 'Romance / Jovem Adulto', description: 'Livro 5 da série Boys of Tommen. Acompanha Gibsie e Claire.' },
+
+                // Trilogia Jojo Moyes
+                { id: 8, title: 'Como Eu Era Antes de Você', author: 'Jojo Moyes', category: 'Romance', description: 'A inesquecível e comovente história de Louisa Clark e Will Traynor.' },
+                { id: 9, title: 'Depois de Você', author: 'Jojo Moyes', category: 'Romance', description: 'A continuação da jornada de Louisa Clark após a perda.' },
+                { id: 10, title: 'Ainda Sou Eu', author: 'Jojo Moyes', category: 'Romance', description: 'O terceiro livro que acompanha as aventuras de Louisa Clark em Nova York.' },
+
+                // Clássicos das Irmãs Brontë
+                { id: 11, title: 'Jane Eyre', author: 'Charlotte Brontë', category: 'Clássico / Romance', description: 'A jornada de superação da órfã que se torna governanta e se apaixona pelo Sr. Rochester.' },
+                { id: 12, title: 'O Morro dos Ventos Uivantes', author: 'Emily Brontë', category: 'Clássico / Romance', description: 'A paixão intensa e destrutiva entre Heathcliff e Catherine Earnshaw.' },
+                { id: 13, title: 'A Inquilina de Wildfell Hall', author: 'Anne Brontë', category: 'Clássico', description: 'A história de uma misteriosa mulher fugindo de um passado e casamento abusivos.' },
+                { id: 14, title: 'Villette', author: 'Charlotte Brontë', category: 'Clássico', description: 'O denso e psicológico romance sobre a vida de Lucy Snowe em Bruxelas.' },
+
+                // Clássicos de Jane Austen
+                { id: 15, title: 'Orgulho e Preconceito', author: 'Jane Austen', category: 'Clássico / Romance', description: 'O romance definitivo sobre primeiras impressões, estrelando Elizabeth Bennet e Sr. Darcy.' },
+                { id: 16, title: 'Razão e Sensibilidade', author: 'Jane Austen', category: 'Clássico / Romance', description: 'Acompanha as irmãs Dashwood, Elinor (a razão) e Marianne (a emoção).' },
+                { id: 17, title: 'Persuasão', author: 'Jane Austen', category: 'Clássico / Romance', description: 'Uma linda história sobre segundas chances no amor com Anne Elliot e o Capitão Wentworth.' },
+                { id: 18, title: 'Emma', author: 'Jane Austen', category: 'Clássico / Comédia', description: 'A divertida história de uma jovem rica, inteligente e mimada que adora brincar de cupido.' }
+            ],
+            loans: [],
+            reviews: [],
+            logs: []
+        };
+
+        let db = JSON.parse(localStorage.getItem('bib_db'));
+        if (!db) {
+            db = defaultDB;
+            saveDB();
+        }
+
+        function saveDB() {
+            localStorage.setItem('bib_db', JSON.stringify(db));
+        }
+
+        function resetDB() {
+            localStorage.clear();
+            alert("Banco de dados resetado. Novos livros foram carregados!");
+            window.location.hash = '#/';
+            window.location.reload();
+        }
+
+        function logAction(action, email) {
+            db.logs.push({ action, date: new Date().toLocaleString(), userEmail: email });
+            saveDB();
+        }
+
+        // --- UTILITÁRIOS ---
+
+        // Função de Sanitização (Para corrigir XSS)
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Sistema de Notificações
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+
+        // Sessão do Usuário
+        function getCurrentUser() {
+            const userId = localStorage.getItem('userId');
+            return db.users.find(u => String(u.id) === String(userId)) || null;
+        }
+
+        function isAdmin() {
+            if (VULN.brokenAccess) {
+                // VULNERÁVEL: Verifica uma string manipulável no localStorage
+                return localStorage.getItem('userRole') === 'admin';
+            } else {
+                // CORRIGIDO: Valida o privilégio diretamente da fonte de verdade (banco/sessão backend)
+                const user = getCurrentUser();
+                return user && user.role === 'admin';
+            }
+        }
+
+        // --- ROTEADOR E VIEWS ---
+
+        const app = document.getElementById('app');
+
+        function updateNav() {
+            const user = getCurrentUser();
+            const nav = document.getElementById('nav-menu');
+            if (user) {
+                nav.innerHTML = `
+                    <a href="#/acervo">Acervo</a>
+                    <a href="#/painel">Meu Painel</a>
+                    <a href="#/perfil/${user.id}">Perfil</a>
+                    ${isAdmin() ? '<a href="#/admin">Administração</a>' : ''}
+                    <a href="#" onclick="logout(); return false;">Sair (${user.name.split(' ')[0]})</a>
+                `;
+            } else {
+                nav.innerHTML = `
+                    <a href="#/">Início</a>
+                    <a href="#/acervo">Acervo</a>
+                    <a href="#/login">Entrar</a>
+                    <a href="#/cadastro">Cadastrar</a>
+                `;
+            }
+        }
+
+        function router() {
+            updateNav();
+            const hash = window.location.hash || '#/';
+            const path = hash.split('?')[0];
+
+            // Renderiza views baseadas na rota
+            if (path === '#/') renderHome();
+            else if (path === '#/login') renderLogin();
+            else if (path === '#/cadastro') renderRegister();
+            else if (path === '#/acervo') renderCatalog();
+            else if (path.startsWith('#/livro/')) renderBook(path.split('/')[2]);
+            else if (path === '#/painel') renderDashboard();
+            else if (path.startsWith('#/perfil/')) renderProfile(path.split('/')[2]);
+            else if (path === '#/admin') renderAdmin();
+            else if (path === '#/debug') renderDebug();
+            else app.innerHTML = `<h2>404 - Página não encontrada</h2>`;
+        }
+
+        // --- TELAS (VIEWS) ---
+
+        function renderHome() {
+            app.innerHTML = `
+                <div class="banner">
+                    <h2>Bem-vindo à BiblioSenai</h2>
+                    <p>Encontre os melhores romances e livros técnicos.</p>
+                </div>
+                <div class="card" style="margin-top: 20px;">
+                    <h3>Estatísticas do Acervo</h3>
+                    <p>Total de Livros: <b>${db.books.length}</b> | Usuários Registrados: <b>${db.users.length}</b></p>
+                </div>
+            `;
+        }
+
+        function renderLogin() {
+            app.innerHTML = `
+                <div class="card">
+                    <h2 style="text-align: center;">Login</h2>
+                    <form id="loginForm">
+                        <label>E-mail:</label>
+                        <input type="email" id="logEmail" required>
+                        <label>Senha:</label>
+                        <input type="password" id="logPass" required>
+                        <button type="submit">Entrar</button>
+                    </form>
+                </div>
+            `;
+            document.getElementById('loginForm').onsubmit = (e) => {
+                e.preventDefault();
+                const email = document.getElementById('logEmail').value;
+                const pass = document.getElementById('logPass').value;
+                const user = db.users.find(u => u.email === email && u.password === pass);
+                
+                if (user) {
+                    localStorage.setItem('userId', user.id);
+                    localStorage.setItem('userRole', user.role); // Usado para BAC vulnerável
+                    // FLAG: Armazenamento sensível no localStorage (Simulando JWT ou Token)
+                    localStorage.setItem('bib_token', 'FLAG{XSS_ARMAZENADO}');
+                    logAction('Login realizado', user.email);
+                    showToast('Login com sucesso!');
+                    window.location.hash = '#/painel';
+                } else {
+                    showToast('Credenciais inválidas!');
+                }
+            };
+        }
+
+        function renderRegister() {
+            app.innerHTML = `
+                <div class="card">
+                    <h2 style="text-align: center;">Cadastro de Aluno</h2>
+                    <form id="regForm">
+                        <input type="text" id="regName" placeholder="Nome Completo" required>
+                        <input type="email" id="regEmail" placeholder="E-mail" required>
+                        <input type="text" id="regCpf" placeholder="CPF (Apenas números)" required>
+                        <input type="password" id="regPass" placeholder="Senha" required>
+                        <button type="submit">Cadastrar</button>
+                    </form>
+                </div>
+            `;
+            document.getElementById('regForm').onsubmit = (e) => {
+                e.preventDefault();
+                const newUser = {
+                    id: Date.now(),
+                    name: document.getElementById('regName').value,
+                    email: document.getElementById('regEmail').value,
+                    cpf: document.getElementById('regCpf').value,
+                    password: document.getElementById('regPass').value,
+                    role: 'user',
+                    bio: 'Novo na biblioteca.'
+                };
+                if (db.users.find(u => u.email === newUser.email)) {
+                    showToast('E-mail já cadastrado.');
+                    return;
+                }
+                db.users.push(newUser);
+                saveDB();
+                logAction('Novo usuário cadastrado', newUser.email);
+                showToast('Cadastro realizado! Faça login.');
+                window.location.hash = '#/login';
+            };
+        }
+
+        function logout() {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('bib_token');
+            showToast('Desconectado.');
+            window.location.hash = '#/';
+        }
+
+        function renderDashboard() {
+            const user = getCurrentUser();
+            if (!user) return window.location.hash = '#/login';
+
+            const myLoans = db.loans.filter(l => String(l.userId) === String(user.id) && !l.dateReturn);
+
+            let loansHtml = myLoans.length === 0 ? '<p>Nenhum empréstimo ativo.</p>' : `
+                <table>
+                    <tr><th>Livro</th><th>Data Empréstimo</th><th>Ação</th></tr>
+                    ${myLoans.map(l => {
+                        const book = db.books.find(b => String(b.id) === String(l.bookId));
+                        return `<tr>
+                            <td>${book.title}</td>
+                            <td>${l.dateOut}</td>
+                            <td><button onclick="returnBook('${l.bookId}')">Devolver</button></td>
+                        </tr>`;
+                    }).join('')}
+                </table>
+            `;
+
+            app.innerHTML = `
+                <h2>Meu Painel</h2>
+                <div class="card">
+                    <h3>Meus Empréstimos</h3>
+                    ${loansHtml}
+                </div>
+            `;
+        }
+
+        // Função Global para botão de devolução
+        window.returnBook = function(bookId) {
+            const user = getCurrentUser();
+            const loan = db.loans.find(l => String(l.bookId) === String(bookId) && String(l.userId) === String(user.id) && !l.dateReturn);
+            if (loan) {
+                loan.dateReturn = new Date().toLocaleString();
+                saveDB();
+                logAction('Devolução de livro: ' + bookId, user.email);
+                showToast('Livro devolvido!');
+                renderDashboard();
+            }
+        };
+
+        function renderProfile(profileId) {
+            const currentUser = getCurrentUser();
+            if (!currentUser) return window.location.hash = '#/login';
+
+            // VULNERABILIDADE 3: IDOR (Insecure Direct Object Reference)
+            if (!VULN.idorProfile) {
+                // CORRIGIDO: Se não for o dono do perfil E não for admin, bloqueia.
+                if (String(profileId) !== String(currentUser.id) && !isAdmin()) {
+                    app.innerHTML = `<div class="card"><h2 style="color:red">Erro: Acesso Negado. Você não tem permissão para ver este perfil.</h2></div>`;
+                    return;
+                }
+            }
+            // VULNERÁVEL: Qualquer usuário logado pode passar o ID na URL e ver os dados de outro (ex: CPF, dados pessoais, Flags)
+
+            const userView = db.users.find(u => String(u.id) === String(profileId));
+            if (!userView) {
+                app.innerHTML = `<h2>Usuário não encontrado</h2>`;
+                return;
+            }
+
+            // VULNERABILIDADE 2: Stored XSS na Bio
+            const displayBio = VULN.storedXSS ? userView.bio : escapeHTML(userView.bio);
+
+            const isOwner = String(currentUser.id) === String(userView.id);
+
+            app.innerHTML = `
+                <div class="card">
+                    <h2>Perfil: ${escapeHTML(userView.name)}</h2>
+                    <p><b>E-mail:</b> ${escapeHTML(userView.email)}</p>
+                    <p><b>CPF:</b> ${escapeHTML(userView.cpf)}</p>
+                    <hr style="margin: 15px 0;">
+                    <h3>Biografia:</h3>
+                    <p id="bioText">${displayBio}</p>
+                    
+                    ${isOwner ? `
+                        <hr style="margin: 15px 0;">
+                        <h4>Editar Perfil</h4>
+                        <form id="editProfileForm">
+                            <input type="text" id="editName" value="${escapeHTML(userView.name)}" required>
+                            <textarea id="editBio" rows="3">${escapeHTML(userView.bio)}</textarea>
+                            <button type="submit">Salvar Alterações</button>
+                        </form>
+                    ` : ''}
+                </div>
+            `;
+
+            if (isOwner) {
+                document.getElementById('editProfileForm').onsubmit = (e) => {
+                    e.preventDefault();
+                    userView.name = document.getElementById('editName').value;
+                    userView.bio = document.getElementById('editBio').value; // Salva sem sanitizar (permitindo XSS armazenado)
+                    saveDB();
+                    showToast('Perfil atualizado!');
+                    renderProfile(profileId);
+                };
+            }
+        }
+
+        function renderCatalog() {
+            // Extrai busca da URL (#/acervo?q=termo)
+            const params = new URLSearchParams(window.location.hash.split('?')[1]);
+            const searchQuery = params.get('q') || '';
+
+            // VULNERABILIDADE 1: Reflected XSS
+            // Se vulnerável, renderiza o parâmetro direto. Se não, sanitiza.
+            const displaySearch = VULN.reflectedXSS ? searchQuery : escapeHTML(searchQuery);
+
+            let filteredBooks = db.books;
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                filteredBooks = db.books.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+            }
+
+            app.innerHTML = `
+                <h2>Acervo da Biblioteca</h2>
+                <div class="card">
+                    <form onsubmit="window.location.hash = '#/acervo?q=' + document.getElementById('searchInput').value; return false;" style="flex-direction: row; max-width: 100%;">
+                        <input type="text" id="searchInput" placeholder="Buscar por título ou autor..." value="${escapeHTML(searchQuery)}">
+                        <button type="submit">Buscar</button>
+                    </form>
+                </div>
+                ${searchQuery ? `<p>Resultados para: <b>${displaySearch}</b></p>` : ''}
+                
+                <div class="grid">
+                    ${filteredBooks.map(b => `
+                        <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                            <div>
+                                <h3>${escapeHTML(b.title)}</h3>
+                                <p><i>${escapeHTML(b.author)}</i></p>
+                                <p><small>${escapeHTML(b.category)}</small></p>
+                            </div>
+                            <button style="margin-top:10px;" onclick="window.location.hash='#/livro/${b.id}'">Detalhes</button>
+                        </div>
+                    `).join('')}
+                    ${filteredBooks.length === 0 ? '<p>Nenhum livro encontrado.</p>' : ''}
+                </div>
+            `;
+        }
+
+        function renderBook(bookId) {
+            const book = db.books.find(b => String(b.id) === String(bookId));
+            if (!book) return (app.innerHTML = '<h2>Livro não encontrado</h2>');
+
+            const user = getCurrentUser();
+            const bookReviews = db.reviews.filter(r => String(r.bookId) === String(bookId));
+            
+            const isLoanedByMe = user && db.loans.some(l => String(l.bookId) === String(bookId) && String(l.userId) === String(user.id) && !l.dateReturn);
+
+            app.innerHTML = `
+                <div class="card">
+                    <h2>${escapeHTML(book.title)}</h2>
+                    <p><b>Autor:</b> ${escapeHTML(book.author)} | <b>Categoria:</b> ${escapeHTML(book.category)}</p>
+                    <p style="margin: 15px 0;">${escapeHTML(book.description)}</p>
+                    
+                    ${user ? 
+                        (isLoanedByMe ? 
+                            `<button class="btn-danger" disabled>Livro em sua posse</button>` : 
+                            `<button onclick="borrowBook('${book.id}')">Pegar Emprestado</button>`) 
+                        : '<p><i>Faça login para pegar emprestado.</i></p>'
+                    }
+                </div>
+
+                <div class="card">
+                    <h3>Avaliações</h3>
+                    ${user ? `
+                        <form id="reviewForm" style="max-width: 100%; margin-bottom: 20px;">
+                            <textarea id="revText" rows="2" placeholder="Deixe sua avaliação..." required></textarea>
+                            <button type="submit" style="width: 150px;">Avaliar</button>
+                        </form>
+                    ` : ''}
+                    
+                    <div id="reviewsList">
+                        ${bookReviews.map(r => {
+                            const reviewer = db.users.find(u => String(u.id) === String(r.userId));
+                            // VULNERABILIDADE 2: Stored XSS nas avaliações
+                            const reviewContent = VULN.storedXSS ? r.text : escapeHTML(r.text);
+                            return `
+                                <div style="border-bottom: 1px solid var(--border-color); padding: 10px 0;">
+                                    <strong>${escapeHTML(reviewer ? reviewer.name : 'Usuário apagado')}:</strong>
+                                    <p>${reviewContent}</p>
+                                </div>
+                            `;
+                        }).join('') || '<p>Nenhuma avaliação ainda.</p>'}
+                    </div>
+                </div>
+            `;
+
+            if (user) {
+                document.getElementById('reviewForm').onsubmit = (e) => {
+                    e.preventDefault();
+                    const text = document.getElementById('revText').value;
+                    db.reviews.push({ bookId, userId: user.id, text });
+                    saveDB();
+                    showToast('Avaliação enviada!');
+                    renderBook(bookId); // recarrega
+                };
+            }
+        }
+
+        window.borrowBook = function(bookId) {
+            const user = getCurrentUser();
+            db.loans.push({ bookId, userId: user.id, dateOut: new Date().toLocaleString(), dateReturn: null });
+            saveDB();
+            logAction('Empréstimo de livro: ' + bookId, user.email);
+            showToast('Empréstimo realizado com sucesso!');
+            renderBook(bookId);
+        };
+
+        function renderAdmin() {
+            if (!isAdmin()) {
+                app.innerHTML = `<div class="card"><h2 style="color:red">Acesso Restrito a Administradores</h2></div>`;
+                return;
+            }
+
+            app.innerHTML = `
+                <div class="card" style="background-color: #ffe6e6; border-color: #ff9999; color: #cc0000;">
+                    <h2>Área Administrativa</h2>
+                    <p><b>FLAG{ACESSO_ADMINISTRATIVO}</b></p>
+                    <p>Acesso liberado aos controles do sistema.</p>
+                </div>
+                
+                <div class="card">
+                    <h3>Gerenciar Usuários</h3>
+                    <table>
+                        <tr><th>ID</th><th>Nome</th><th>Papel</th><th>Ação</th></tr>
+                        ${db.users.map(u => `
+                            <tr>
+                                <td>${u.id}</td>
+                                <td>${escapeHTML(u.name)}</td>
+                                <td>${u.role}</td>
+                                <td>
+                                    <button onclick="toggleRole('${u.id}')" style="padding: 5px;">Tornar ${u.role === 'admin' ? 'User' : 'Admin'}</button>
+                                    <button class="btn-danger" onclick="removeUser('${u.id}')" style="padding: 5px;">Remover</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3>Cadastrar Novo Livro</h3>
+                    <form id="addBookForm">
+                        <input type="text" id="bTitle" placeholder="Título" required>
+                        <input type="text" id="bAuthor" placeholder="Autor" required>
+                        <input type="text" id="bCat" placeholder="Categoria" required>
+                        <textarea id="bDesc" placeholder="Descrição"></textarea>
+                        <button type="submit">Adicionar Livro</button>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <h3>Logs do Sistema</h3>
+                    <ul style="max-height: 200px; overflow-y: auto;">
+                        ${db.logs.slice().reverse().map(l => `<li><small>${l.date} - <b>${escapeHTML(l.userEmail)}</b>:${escapeHTML(l.action)}</small></li>`).join('')}
+                    </ul>
+                </div>
+            `;
+
+            document.getElementById('addBookForm').onsubmit = (e) => {
+                e.preventDefault();
+                db.books.push({
+                    id: Date.now(),
+                    title: document.getElementById('bTitle').value,
+                    author: document.getElementById('bAuthor').value,
+                    category: document.getElementById('bCat').value,
+                    description: document.getElementById('bDesc').value
+                });
+                saveDB();
+                showToast('Livro adicionado!');
+                renderAdmin();
+            };
+        }
+
+        window.toggleRole = function(id) {
+            const u = db.users.find(x => String(x.id) === String(id));
+            if (u) { u.role = u.role === 'admin' ? 'user' : 'admin'; saveDB(); renderAdmin(); }
+        };
+
+        window.removeUser = function(id) {
+            if(confirm('Tem certeza?')) {
+                db.users = db.users.filter(x => String(x.id) !== String(id));
+                saveDB(); renderAdmin();
+            }
+        };
+
+        function renderDebug() {
+            // VULNERABILIDADE 5: Exposição de Informações (Rota de Debug em Produção)
+            if (!VULN.infoExposure) {
+                app.innerHTML = `<h2>404 - Página não encontrada</h2>`;
+                return;
+            }
+
+            app.innerHTML = `
+                <div class="card">
+                    <h2 style="color:red">⚠️️ Área de Debug do Desenvolvedor ⚠️</h2>
+                    <p><b>FLAG{DEBUG_EXPOSTO}</b></p>
+                    <p>Dump completo do banco de dados (Cuidado: contém senhas e CPFs):</p>
+                    <pre style="background:#333; color:#0f0; padding:15px; overflow-x:auto; border-radius:5px;">
+${escapeHTML(JSON.stringify(db, null, 2))}
+                    </pre>
+                </div>
+            `;
+        }
+
+        // Inicializa o roteador na primeira carga
+        window.addEventListener('hashchange', router);
+        window.addEventListener('load', router);
+
+    </script>
+</body>
+</html>
